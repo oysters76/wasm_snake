@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Snake Game</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="canvas" width="800" height="800"></canvas>
+    
+    <script>
+        var Module = {
+            onRuntimeInitialized() {
+                console.log("Wasm module initialized");
+
+                const initGame = Module.cwrap('init_game', 'void', []);
+                const updateGame = Module.cwrap('update_game', 'void', []);
+                const setDirection = Module.cwrap('set_direction', 'void', ['number', 'number']);
+                const getSnakeX = Module.cwrap('get_snake_x', 'number', []);
+                const getSnakeY = Module.cwrap('get_snake_y', 'number', []);
+                const getFoodX = Module.cwrap('get_food_x', 'number', []);
+                const getFoodY = Module.cwrap('get_food_y', 'number', []);
+                const isGameOver = Module.cwrap('is_game_over', 'number', []);
+                const getSnakeSize = Module.cwrap('get_snake_size', 'number', []);
+
+                console.log("Game functions wrapped");
+
+                const canvas = document.getElementById('canvas');
+                const ctx = canvas.getContext('2d');
+                const tileSize = 30;
+
+                const targetFPS = 30;
+                const targetInterval = 1000 / targetFPS;
+                let lastFrameTime = 0;
+
+                initGame();
+                console.log("Game initialized");
+
+                document.addEventListener('keydown', (event) => {
+                    switch (event.key) {
+                        case 'ArrowUp':
+                            setDirection(0, -1);
+                            break;
+                        case 'ArrowDown':
+                            setDirection(0, 1);
+                            break;
+                        case 'ArrowLeft':
+                            setDirection(-1, 0);
+                            break;
+                        case 'ArrowRight':
+                            setDirection(1, 0);
+                            break;
+                    }
+                });
+
+                function gameLoop(timestamp) {
+                    if (timestamp >= lastFrameTime + targetInterval) {
+                        lastFrameTime = timestamp;
+                            
+                        if (isGameOver()) {
+                            alert('Game Over!');
+                            initGame();
+                        }
+
+                        updateGame();
+                        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                        ctx.fillStyle = 'green';
+                        ctx.fillRect(getSnakeX() * tileSize, getSnakeY() * tileSize, tileSize, tileSize);
+
+                        ctx.fillStyle = 'red';
+                        ctx.fillRect(getFoodX() * tileSize, getFoodY() * tileSize, tileSize, tileSize);
+
+                        console.log(getFoodX() + " " + getFoodY() + " " + getSnakeSize());
+                        console.log("ddd");
+                    }
+                    requestAnimationFrame(gameLoop);
+                }
+                   
+
+                gameLoop();
+            }
+        };
+    </script>
+    <script src="game.js"></script>
+</body>
+</html>
